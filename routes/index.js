@@ -3,9 +3,11 @@ const router = express.Router();
 const bcrypt = require('bcrypt');
 const passport = require('passport');
 const User = require('../models/user');
-
+const mongoose = require('mongoose');
+const db = mongoose.connection
 
 const initializePassport = require('../passport-config');
+const { find } = require('../models/user');
 
 initializePassport(
     passport,
@@ -13,37 +15,78 @@ initializePassport(
     id => User.findOne({id:id})
     )
 
-    
+    console.log('here');
 
 router.get('/',checkAuthenticated , async(req,res) => {
     
     let users
-    ////users =await  User.find();
+
+    // var id = req.user.id;
+    // User.findOne({_id: id}, function (err, user) {
+    //     if (err) return res.json(400, {message: `user ${id} not found.`});
+    
+    //     // make sure you omit sensitive user information 
+    //     // on this object before sending it to the client.
+    //     //res.json(user);
+    //     res.render('index.ejs' , {users : user});
+    //   });
+ 
+    users =await  User.find();
     try {
-        users = await User.find({user : req.user});
-      } catch {
+       
+        users = await User.find({email : sessionEmail},{name: 1, _id: 0});
+        var namefinal = users[0].name;
+        console.log(namefinal);
+    
+    } catch {
         users = []
       }
       res.render('index.ejs', {
-        users: users
+        users: namefinal
       })
-    console.log("req.user is  ", req.user);
+      console.log(users,this.name);
+    console.log("req.user is  ",users.values(users).name);
     //res.render('index.ejs' , {users : users});
 })
-const sessionEmail = ''
+
+
+// router.get('/:id',checkAuthenticated , async(req,res) => {
+//     let user
+//     user = await User.findOne({id: req.params.id});
+//     res.render('index.ejs' , {user : user});
+// }
+// )
+
+
+let sessionEmail = ''
 
 router.get('/login',checkNotAuthenticated , (req,res) => {
 
     res.render('login.ejs', {
         layout: 'login.ejs',
     });
+
+
 })
 
-router.post('/login',checkNotAuthenticated ,passport.authenticate('local', {
-    successRedirect: '/',
-    failureRedirect: '/login',
-    failureFlash: true
-}));
+router.post('/login',checkNotAuthenticated, (req , res)=>{sessionEmail = req.body.email
+    console.log(sessionEmail);
+    passport.authenticate('local', {
+        successRedirect: '/',
+        failureRedirect: '/login',
+        failureFlash: true
+    
+}
+// ,passport.authenticate('local', {
+//     successRedirect: '/',
+//     failureRedirect: '/login',
+//     failureFlash: true,
+
+// }));
+)(req,res);
+}
+)
+
 
 
 
@@ -52,6 +95,7 @@ router.get('/register',checkNotAuthenticated ,(req,res) => {
         layout: 'register.ejs',
         user : new User()
     });
+
 })
 
 router.post('/register', checkNotAuthenticated ,async(req,res) => {
@@ -66,7 +110,7 @@ router.post('/register', checkNotAuthenticated ,async(req,res) => {
         const newUser = await user.save();
 
         console.log(newUser, ' new user created');
-        res.redirect('/login')
+        res.redirect('/')
     }
     catch(err){
         console.log(err)
