@@ -6,19 +6,31 @@ const User = require('../models/user');
 
 
 const initializePassport = require('../passport-config');
-const { application } = require('express');
+
 initializePassport(
-    passport, 
-    email =>  users.find(user => user.email === email),
-    id =>  users.find(user => user.id === id)
+    passport,
+    email => User.findOne({email: email}),
+    id => User.findOne({id:id})
     )
 
-const users = [];
+    
 
-router.get('/',checkAuthenticated , (req,res) => {
-    res.render('index.ejs' , {name : req.user.name});
+router.get('/',checkAuthenticated , async(req,res) => {
+    
+    let users
+    ////users =await  User.find();
+    try {
+        users = await User.find({user : req.user});
+      } catch {
+        users = []
+      }
+      res.render('index.ejs', {
+        users: users
+      })
+    console.log("req.user is  ", req.user);
+    //res.render('index.ejs' , {users : users});
 })
-
+const sessionEmail = ''
 
 router.get('/login',checkNotAuthenticated , (req,res) => {
 
@@ -32,22 +44,6 @@ router.post('/login',checkNotAuthenticated ,passport.authenticate('local', {
     failureRedirect: '/login',
     failureFlash: true
 }));
-// }), async (req,res) => {
-//     const user = new User({
-//         name: req.body.name,
-//         email: req.body.email,
-//         password: req.body.password
-//     });
-//     try{
-//         //const salt = await bcrypt.genSalt(10);
-//         const newUser = await user.save();
-//         console.log(newUser, ' new user created');
-//     }
-//     catch(err){
-//         console.log(err);
-//     }
-
-// })
 
 
 
@@ -68,12 +64,7 @@ router.post('/register', checkNotAuthenticated ,async(req,res) => {
             });
     try{
         const newUser = await user.save();
-        // users.push({
-        //     id : Date.now().toString(),
-        //     name : req.body.name,
-        //     email : req.body.email,
-        //     password : hashedPassword
-        // })
+
         console.log(newUser, ' new user created');
         res.redirect('/login')
     }
@@ -81,7 +72,7 @@ router.post('/register', checkNotAuthenticated ,async(req,res) => {
         console.log(err)
         res.redirect('/register')
     }
-    console.log(users)
+    console.log(user)
     //res.send("works")
 })
 
